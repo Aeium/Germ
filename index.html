@@ -23,8 +23,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 var canvas1 = document.getElementById("myCanvas");
 var ctx1    = canvas1.getContext("2d");
 
+ctx1.font="20px Georgia";
+ctx1.fillText("Game Board",10,475);
+
+
 var canvas2 = document.getElementById("myCanvas2");
 var ctx2    = canvas2.getContext("2d");
+
+ctx2.font="20px Georgia";
+ctx2.fillText("Move Preview",10,475);
 
 var cellSize = 50;
 
@@ -237,9 +244,9 @@ function setPix(x, y, r, g, b){
 function drawBoard1(){
 
     ctx1.fillStyle="#FFFFFF";
-    ctx1.fillRect(0,0,canvas1.width,canvas1.height);
+    ctx1.fillRect(0,0,canvas1.width,canvas1.width);
     ctx2.fillStyle="#FFFFFF";
-    ctx2.fillRect(0,0,canvas1.width,canvas1.height);
+    ctx2.fillRect(0,0,canvas1.width,canvas1.width);
 
     var halfCell = cellSize/2
     

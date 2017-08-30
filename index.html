@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<div id="container">
+<canvas id="myCanvas" width= 450%; height= 450%; style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
+
+<canvas id="myCanvas2" width= 450%; height= 450%; style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
+</div>
+
+<script>
+/*
+Copyright 2017 Nathan Epstein
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*/
+
+
+var canvas1 = document.getElementById("myCanvas");
+var ctx1    = canvas1.getContext("2d");
+
+var canvas2 = document.getElementById("myCanvas2");
+var ctx2    = canvas2.getContext("2d");
+
+var cellSize = 50;
+
+var boardLen = 9;
+
+
+var canvasLeft = canvas1.offsetLeft;
+var canvasTop  = canvas1.offsetTop;
+
+var turn = 0;
+var previewTurn = 0;
+
+var selectedPos = null
+
+var ready1 = false
+var ready2 = false
+
+var expBool = false
+
+// fuck it one array now
+
+/*
+ 1:  Active Orange Cell
+ 2:  Active Blue Cell
+ 3:  Orange Spore
+ 4:  Blue Spore
+ 5:  Active Orange Cell temp Ghost
+ 6:  Active Blue Cell temp Ghost
+ 7:  Orange Spore temp Ghost
+ 8:  Blue Spore temp Ghost
+ 9:  Dead Orange Cell temp ghost
+ 10: Dead Blue Cell temp ghost
+ */
+
+var board = new Array(boardLen);
+for (var i = 0; i < boardLen; i++) {
+  board[i] = new Array(boardLen);
+  board[i].fill(0);
+}
+
+var nBoardPre = new Array(boardLen);
+for (var i = 0; i < boardLen; i++) {
+  nBoardPre[i] = new Array(boardLen);
+  nBoardPre[i].fill(0);
+}
+
+var nBoard = new Array(boardLen);
+for (var i = 0; i < boardLen; i++) {
+  nBoard[i] = new Array(boardLen);
+  nBoard[i].fill(0);
+}
+
+
+
+function mod(n, m) {
+        return ((n % m) + m) % m;
+}
+
+function printboard(board, string){
+
+    console.log(string)
+	for( var i = 0; i < boardLen; i++){
+	    console.log(board[i])
+	}
+}
+
+function preview(X, Y, turn, preview = false){
+
+    //console.log(X*10+Y);
+
+    //console.log(X);	
+
+    //console.log(board1[X]);
+    
+    for(var i = 0; i < boardLen; i++){
+        for(var j = 0; j < boardLen; j++){
+            if(board[i][j] > 4){   // reset temp ghosts
+                board[i][j] = 0
+            }    
+        }
+    }
+    
+	 
+    //if(board[X][Y] > 4){   // reset temp ghosts
+    //    board[X][Y] = 0
+    //}    
+    
+    if(turn == 0 && board[X][Y] == 0){
+        //console.log("writing ");
+        board[X][Y] = 7;
+        return true;
+	}
+    else if(turn == 1 && board[X][Y] == 0){
+        //console.log("setting board2spore to 1");
+        board[X][Y] = 8;
+        return true;
+    }
+    else if(turn == 0 && board[X][Y] == 3){
+	
+        board[X][Y] = 5;
+        return true;
+	}
+	else if(turn == 1 && board[X][Y] == 4){
+        //console.log("setting board2 to 1");
+        board[X][Y] = 6;
+
+        return true;
+	}
+    else if(turn == 0 && board[X][Y] == 1){
+	
+        board[X][Y] = 0;
+        return true;
+	}
+	else if(turn == 1 && board[X][Y] == 2){
+        //console.log("setting board2 to 1");
+        board[X][Y] = 0;
+
+        return true;
+	}
+	return false;
+	
+}
+
+function convertBoard(){
+
+    nBoardPre = new Array(boardLen);
+    for (var i = 0; i < boardLen; i++) {
+        nBoardPre[i] = new Array(boardLen);
+        nBoardPre[i].fill(0);
+    }
+	
+	//printboard(board, "board")
+
+    for(var i = 0; i < boardLen; i++){
+        for(var j = 0; j < boardLen; j++){
+		
+            if(board[i][j] > 4){   
+                nBoardPre[i][j] = board[i][j] - 4
+            }
+            else{
+                nBoardPre[i][j] = board[i][j]
+            }
+        }
+    }
+	
+	
+	
+	//printboard(nBoardPre, "nBoardPre")
+    
+}
+
+function select(X, Y, turn, preview = false){
+
+    console.log(X*10+Y);
+
+    console.log(X);	
+
+    console.log(board[X]);
+    
+    if(board[X][Y] > 4){   // reset temp ghosts
+        board[X][Y] = 0
+    }    
+	
+    if(turn == 0 && board[X][Y] == 0){
+        //console.log("writing ");
+        board[X][Y] = 3;
+        return true;
+	}
+    else if(turn == 1 && board[X][Y] == 0){
+        //console.log("setting board2spore to 1");
+        board[X][Y] = 4;
+        return true;
+    }
+    else if(turn == 0 && board[X][Y] == 3){
+	
+        board[X][Y] = 1;
+        return true;
+	}
+	else if(turn == 1 && board[X][Y] == 4){
+        //console.log("setting board2 to 1");
+        board[X][Y] = 2;
+
+        return true;
+	}
+    else if(turn == 0 && board[X][Y] == 1){
+	
+        board[X][Y] = 0;
+        return true;
+	}
+	else if(turn == 1 && board[X][Y] == 2){
+        //console.log("setting board2 to 1");
+        board[X][Y] = 0;
+
+        return true;
+	}
+	return false;
+	
+}
+
+function setPix(x, y, r, g, b){
+
+        var xPix = x * cellSize;
+        var yPix = y * cellSize;
+
+        ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+        ctx.fillRect(xPix, yPix, cellSize, cellSize);
+
+}
+
+function drawBoard1(){
+
+    ctx1.fillStyle="#FFFFFF";
+    ctx1.fillRect(0,0,canvas1.width,canvas1.height);
+    ctx2.fillStyle="#FFFFFF";
+    ctx2.fillRect(0,0,canvas1.width,canvas1.height);
+
+    var halfCell = cellSize/2
+    
+    for(var i = 0; i < boardLen; i++){
+    
+        ctx1.beginPath()
+        ctx1.moveTo(cellSize * i + halfCell, halfCell)
+        ctx1.lineTo(cellSize * i + halfCell, cellSize*boardLen - halfCell)
+        ctx1.stroke()
+        
+        ctx1.beginPath()
+        ctx1.moveTo( halfCell, cellSize * i + halfCell,)
+        ctx1.lineTo( cellSize*boardLen - halfCell, cellSize * i + halfCell,)
+        ctx1.stroke()
+    
+    }
+    
+    for(var i = 0; i < boardLen; i++){
+    
+        ctx2.beginPath()
+        ctx2.moveTo(cellSize * i + halfCell, halfCell)
+        ctx2.lineTo(cellSize * i + halfCell, cellSize*boardLen - halfCell)
+        ctx2.stroke()
+        
+        ctx2.beginPath()
+        ctx2.moveTo( halfCell, cellSize * i + halfCell,)
+        ctx2.lineTo( cellSize*boardLen - halfCell, cellSize * i + halfCell,)
+        ctx2.stroke()
+    
+    }
+    
+    //for(var i = 0; i < (boardLen-1) * (boardLen-1); i++){
+    
+        /*
+        var x1 = cellSize * (i%(boardLen-1)) + halfCell + 5
+        var x2 = cellSize * (i%(boardLen-1)) + cellSize - 3
+        
+        var y1 = cellSize * Math.floor(i/(boardLen-1)) + halfCell + 5 
+        var y2 = cellSize * Math.floor(i/(boardLen-1)) + cellSize - 3
+ 
+        var x3 = cellSize * (i%(boardLen-1)) + cellSize + 3
+        var x4 = cellSize * (i%(boardLen-1)) + cellSize + halfCell - 5
+        
+        var y3 = cellSize * Math.floor(i/(boardLen-1)) + cellSize + 3 
+        var y4 = cellSize * Math.floor(i/(boardLen-1)) + cellSize + halfCell - 5
+ 
+        ctx.beginPath()
+        ctx.moveTo(x1,y1)
+        ctx.lineTo(x2,y2)
+        ctx.stroke()
+    
+        ctx.beginPath()
+        ctx.moveTo(x3,y3)
+        ctx.lineTo(x4,y4)
+        ctx.stroke()
+        
+        ctx.beginPath()
+        ctx.moveTo(x1,y4)
+        ctx.lineTo(x2,y3)
+        ctx.stroke()
+        
+        ctx.beginPath()
+        ctx.moveTo(x3,y2)
+        ctx.lineTo(x4,y1)
+        ctx.stroke()*/
+        
+        //var x1 = cellSize * (i%(boardLen-1)) + halfCell + 6
+        //var x2 = cellSize * (i%(boardLen-1)) + halfCell + cellSize - 6
+        
+        //var y1 = cellSize * Math.floor(i/(boardLen-1)) + halfCell + 6
+        //var y2 = cellSize * Math.floor(i/(boardLen-1)) + halfCell + cellSize - 6
+    
+        //ctx.beginPath()
+        //ctx.moveTo(x1,y2)
+        //ctx.lineTo(x2,y1)
+        //ctx.stroke()
+    
+    
+    //}
+    if(boardLen == 9){
+        //drawCircle(3, 3, 6)
+        drawCircle(5, 5, 6, ctx1)
+        //drawCircle(3, 7, 6)
+        //drawCircle(7, 3, 6)   
+        //drawCircle(7, 7, 6)
+    }
+    if(boardLen == 13){
+        drawCircle(4, 4, 6, ctx1)
+        drawCircle(7, 7, 6, ctx1)
+        drawCircle(4, 10, 6, ctx1)
+        drawCircle(10, 4, 6, ctx1)   
+        drawCircle(10, 10, 6, ctx1)
+    }
+    if(boardLen == 19){
+        drawCircle(4, 4, 6, ctx1)
+        drawCircle(4, 10, 6, ctx1)
+        drawCircle(4, 16, 6, ctx1)
+        drawCircle(10, 4, 6, ctx1)   
+        drawCircle(10, 10, 6, ctx1)
+        drawCircle(10, 16, 6, ctx1)
+        drawCircle(16, 4, 6, ctx1)
+        drawCircle(16, 10, 6, ctx1)
+        drawCircle(16, 16, 6, ctx1)
+    }
+    
+    if(boardLen == 9){
+        //drawCircle(3, 3, 6)
+        drawCircle(5, 5, 6, ctx2)
+        //drawCircle(3, 7, 6)
+        //drawCircle(7, 3, 6)   
+        //drawCircle(7, 7, 6)
+    }
+    if(boardLen == 13){
+        drawCircle(4, 4, 6, ctx2)
+        drawCircle(7, 7, 6, ctx2)
+        drawCircle(4, 10, 6, ctx2)
+        drawCircle(10, 4, 6, ctx2)   
+        drawCircle(10, 10, 6, ctx2)
+    }
+    if(boardLen == 19){
+        drawCircle(4, 4, 6, ctx2)
+        drawCircle(4, 10, 6, ctx2)
+        drawCircle(4, 16, 6, ctx2)
+        drawCircle(10, 4, 6, ctx2)   
+        drawCircle(10, 10, 6, ctx2)
+        drawCircle(10, 16, 6, ctx2)
+        drawCircle(16, 4, 6, ctx2)
+        drawCircle(16, 10, 6, ctx2)
+        drawCircle(16, 16, 6, ctx2)
+    }
+    
+    //ctx.beginPath();
+    //ctx.moveTo(0,0);
+    //ctx.lineTo(300,150);
+    //ctx.stroke();
+
+
+}
+
+function drawCircle(xCo,yCo, radius, ctx = ctx1,){
+
+    x = xCo * cellSize - cellSize/2
+    y = yCo * cellSize - cellSize/2
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+    ctx.stroke();
+}
+
+function drawSpore(xCo,yCo, color, ctx = ctx1, ghost = false){
+
+    if(ghost){
+        ctx.strokeStyle	= "#888888"
+	}
+
+    x = xCo * cellSize + cellSize/2
+    y = yCo * cellSize + cellSize/2
+    ctx.beginPath();
+    ctx.arc(x, y, 15, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.lineWidth = 3;
+    ctx.fill();
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    
+    ctx.beginPath()
+    ctx.moveTo(x+10,y+10)
+    ctx.lineTo(x-10,y-10)
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.moveTo(x+15,y)
+    ctx.lineTo(x,y-15)
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.moveTo(x+14,y+6)
+    ctx.lineTo(x-6,y-14)
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.moveTo(x,y+15)
+    ctx.lineTo(x-15,y)
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.moveTo(x+6,y+14)
+    ctx.lineTo(x-14,y-6)
+    ctx.stroke()
+    
+    ctx.lineWidth = 1;
+	
+    if(ghost){
+        ctx.strokeStyle	= "#000000"
+	}
+	
+}
+
+function drawCell2(xCo,yCo, color, ctx = ctx1,){
+
+    x = xCo * cellSize + cellSize/2
+    y = yCo * cellSize + cellSize/2
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.lineWidth = 3;
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    
+    ctx.beginPath()
+    ctx.moveTo(x+14,y+14)
+    ctx.lineTo(x-14,y-14)
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.moveTo(x+20,y)
+    ctx.lineTo(x,y-20)
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.moveTo(x+19,y+8)
+    ctx.lineTo(x-8,y-19)
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.moveTo(x,y+20)
+    ctx.lineTo(x-20,y)
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.moveTo(x+8,y+19)
+    ctx.lineTo(x-19,y-8)
+    ctx.stroke()
+   
+   
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, 2 * Math.PI);
+    ctx.fillStyle = ctx.fillStyle = "rgba(0, 0, 200, 0)"
+    ctx.lineWidth = 3;
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.lineWidth = 1;
+
+}
+
+function drawCell(xCo,yCo, color, ctx = ctx1){
+
+    x = xCo * cellSize + cellSize/2
+    y = yCo * cellSize + cellSize/2
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.lineWidth = .01;
+    ctx.fill();
+    ctx.stroke();
+    //x = xCo * cellSize + cellSize/2 - 7
+    //y = yCo * cellSize + cellSize/2 - 13
+    //ctx.lineWidth = 0.1;
+    //ctx.beginPath();
+    //ctx.arc(x, y, 4, 0, 2 * Math.PI);
+    //ctx.fillStyle = "white";
+    //ctx.fill();
+    //ctx.stroke();
+    ctx.lineWidth = 1;
+}
+
+function drawBoard2(preview = false, ctx = ctx1){
+
+   for(var i = 0; i< boardLen; i++){
+       for(var j = 0; j < boardLen; j++){
+            if(board[i][j] == 1){
+                drawCell(i,j,"#f67622", ctx1)
+                //setPix(i,j,255,100,0);
+            }
+            else if(board[i][j] == 2){
+                drawCell(i,j,"#137dbe", ctx1)
+                //setPix(i,j,0,100,255);
+            }
+            else if(board[i][j] == 3){
+                drawSpore(i,j,"#f67622", ctx1)
+                //setPix(i,j,200,60,0);
+            }
+            else if(board[i][j] == 4){
+                drawSpore(i,j,"#137dbe", ctx1)
+                //setPix(i,j,0,60,200);
+            }
+            else if(board[i][j] == 5){
+                drawCell(i,j,"#fdbb82", ctx1)
+                //setPix(i,j,255,100,0);
+            }
+            else if(board[i][j] == 6){
+                drawCell(i,j,"#71badb", ctx1)
+                //setPix(i,j,0,100,255);
+            }
+            else if(board[i][j] == 7){
+                drawSpore(i,j,"#fdbb82", ctx1, true)
+                //setPix(i,j,200,60,0);
+            }
+            else if(board[i][j] == 8){
+                drawSpore(i,j,"#71badb", ctx1, true)
+                //setPix(i,j,0,60,200);
+            }
+            //else{
+            //    setPix(i,j,255,255,255);
+            //}			
+       }
+    }
+    
+   for(var i = 0; i< boardLen; i++){
+       for(var j = 0; j < boardLen; j++){
+            if(nBoard[i][j] == 1){
+                drawCell(i,j,"#f67622", ctx2)
+                //setPix(i,j,255,100,0);
+            }
+            else if(nBoard[i][j] == 2){
+                drawCell(i,j,"#137dbe", ctx2)
+                //setPix(i,j,0,100,255);
+            }
+            else if(nBoard[i][j] == 3){
+                drawSpore(i,j,"#f67622", ctx2)
+                //setPix(i,j,200,60,0);
+            }
+            else if(nBoard[i][j] == 4){
+                drawSpore(i,j,"#137dbe", ctx2)
+                //setPix(i,j,0,60,200);
+            }
+            else if(nBoard[i][j] == 5){
+                drawCell(i,j,"#fdbb82", ctx2)
+                //setPix(i,j,255,100,0);
+            }
+            else if(nBoard[i][j] == 6){
+                drawCell(i,j,"#71badb", ctx2)
+                //setPix(i,j,0,100,255);
+            }
+            else if(nBoard[i][j] == 7){
+                drawSpore(i,j,"#fdbb82", ctx2)
+                //setPix(i,j,200,60,0);
+            }
+            else if(nBoard[i][j] == 8){
+                drawSpore(i,j,"#71badb", ctx2)
+                //setPix(i,j,0,60,200);
+            }
+            //else{
+            //    setPix(i,j,255,255,255);
+            //}			
+       }
+    }
+}
+
+function countActiveNeibs(X, Y, inBoard){
+
+    //console.log(X *boardLen + Y)
+    //console.log(Y)
+    /*  torus neibs
+    return board[mod(X+1,boardLen)][    Y            ] +
+           board[mod(X+1,boardLen)][mod(Y+1,boardLen)] +
+           board[    X            ][mod(Y+1,boardLen)] +
+           board[mod(X-1,boardLen)][mod(Y+1,boardLen)] +
+           board[mod(X-1,boardLen)][    Y            ] +
+           board[mod(X-1,boardLen)][mod(Y-1,boardLen)] +
+           board[    X            ][mod(Y-1,boardLen)] +
+           board[mod(X+1,boardLen)][mod(Y-1,boardLen)]
+    */
+    
+    var niebSum = 0
+    
+    // edge safety booleans
+    var right = true
+    var left  = true
+    var up    = true
+    var down  = true
+    
+    if(X + 1 == boardLen){
+        right = false
+    }
+    if(X - 1 < 0){
+        left = false
+    }
+    if(Y + 1 == boardLen){
+        top = false
+    }
+    if(Y - 1 < 0){
+        down = false
+    }
+    
+    if(right){
+        if(inBoard[X+1][Y] == 1 || inBoard[X+1][Y] == 2){
+            niebSum++
+        }    
+        if(up){
+            if(inBoard[X+1][Y+1] == 1 || inBoard[X+1][Y+1] == 2){
+                niebSum++
+            }
+        }
+        if(down){
+            if(inBoard[X+1][Y-1] == 1 || inBoard[X+1][Y-1] == 2){
+                niebSum++
+            }
+        }
+    }
+    if(left){
+        if(inBoard[X-1][Y] == 1 || inBoard[X-1][Y] == 2){
+            niebSum++
+        }    
+        if(up){
+            if(inBoard[X-1][Y+1] == 1 || inBoard[X-1][Y+1] == 2){
+                niebSum++
+            }
+        }
+        if(down){
+            if(inBoard[X-1][Y-1] == 1 || inBoard[X-1][Y-1] == 2){
+                niebSum++
+            }
+        }
+    }
+    if(up){
+        if(inBoard[X][Y+1] == 1 || inBoard[X][Y+1] == 2){
+            niebSum++
+        }
+    }
+    if(down){
+        if(inBoard[X][Y-1] == 1 ||inBoard[X][Y-1] == 2){
+            niebSum++
+        }
+    }
+    
+    return niebSum
+}
+
+function countNeibs(X, Y, board){
+
+    //console.log(X *boardLen + Y)
+    //console.log(Y)
+    /*  torus neibs
+    return board[mod(X+1,boardLen)][    Y            ] +
+           board[mod(X+1,boardLen)][mod(Y+1,boardLen)] +
+           board[    X            ][mod(Y+1,boardLen)] +
+           board[mod(X-1,boardLen)][mod(Y+1,boardLen)] +
+           board[mod(X-1,boardLen)][    Y            ] +
+           board[mod(X-1,boardLen)][mod(Y-1,boardLen)] +
+           board[    X            ][mod(Y-1,boardLen)] +
+           board[mod(X+1,boardLen)][mod(Y-1,boardLen)]
+    */
+    
+    var sum1 = 0
+    var sum2 = 0
+    
+    // edge safety booleans
+    var right = true
+    var left  = true
+    var up    = true
+    var down  = true
+    
+    if(X + 1 == boardLen){
+        right = false
+    }
+    if(X - 1 < 0){
+        left = false
+    }
+    if(Y + 1 == boardLen){
+        top = false
+    }
+    if(Y - 1 < 0){
+        down = false
+    }
+    
+    if(right){
+        if(board[X+1][Y] == 1 || board[X+1][Y] == 3){
+            sum1++
+        }
+        if(board[X+1][Y] == 2 || board[X+1][Y] == 4){
+            sum2++
+        } 
+        if(up){
+            if(board[X+1][Y+1] == 1 || board[X+1][Y+1] == 3){
+                sum1++
+            }
+            if(board[X+1][Y+1] == 2 || board[X+1][Y+1] == 4){
+                sum2++
+            } 
+        }
+        if(down){
+            if(board[X+1][Y-1] == 1 || board[X+1][Y-1] == 3){
+                sum1++
+            }
+            if(board[X+1][Y-1] == 2 || board[X+1][Y-1] == 4){
+                sum2++
+            } 
+        }
+    }
+    if(left){
+        if(board[X-1][Y] == 1 || board[X-1][Y] == 3){
+            sum1++
+        }
+        if(board[X-1][Y] == 2 || board[X-1][Y] == 4){
+            sum2++
+        } 
+        if(up){
+            if(board[X-1][Y+1] == 1 || board[X-1][Y+1] == 3){
+                sum1++
+            }
+            if(board[X-1][Y+1] == 2 || board[X-1][Y+1] == 4){
+                sum2++
+            } 
+        }
+        if(down){
+            if(board[X-1][Y-1] == 1 || board[X-1][Y-1] == 3){
+                sum1++
+            }
+            if(board[X-1][Y-1] == 2 || board[X-1][Y-1] == 4){
+                sum2++
+            } 
+        }
+    }
+    if(up){
+        if(board[X][Y+1] == 1 || board[X][Y+1] == 3){
+            sum1++
+        }
+        if(board[X][Y+1] == 2 || board[X][Y+1] == 4){
+            sum2++
+        } 
+    }
+    if(down){
+        if(board[X][Y-1] == 1 || board[X][Y-1] == 3){
+            sum1++
+        }
+        if(board[X][Y-1] == 2 || board[X][Y-1] == 4){
+            sum2++
+        } 
+    }
+    
+    return [sum1,sum2]
+    
+    /* goodbye arrays of 1s, I will miss you
+    if(X > 0 && X < boardLen-1 && Y > 0 && Y < boardLen-1){ 
+        return board[X+1][ Y]  +
+               board[X+1][Y+1] +
+               board[X  ][Y+1] +
+               board[X-1][Y+1] +
+               board[X-1][Y  ] +
+               board[X-1][Y-1] +
+               board[X  ][Y-1] +
+               board[X+1][Y-1]
+    }
+    sum = 0
+    
+    if(X == 0 && Y == 0){
+        return board[X+1][ Y]  +
+               board[X+1][Y+1] +
+               board[X  ][Y+1]
+    }
+    
+    if(X == 0 && Y == boardLen-1){
+        return board[X+1][ Y]  +
+               board[X+1][Y-1] +
+               board[X  ][Y-1]
+    }
+    
+    if(X == boardLen-1 && Y == 0){
+        return board[X-1][ Y]  +
+               board[X-1][Y+1] +
+               board[X  ][Y+1]
+    }
+    
+    if(X == boardLen-1 && Y == boardLen-1){
+        return board[X-1][ Y]  +
+               board[X-1][Y-1] +
+               board[X  ][Y-1]
+    }
+    
+    if(X == 0){
+        return board[X+1][ Y]  +
+               board[X+1][Y+1] +
+               board[X  ][Y+1] +
+               board[X  ][Y-1] +
+               board[X+1][Y-1]
+    }
+    
+    if(Y == 0){
+        return board[X+1][ Y]  +
+               board[X+1][Y+1] +
+               board[X  ][Y+1] +
+               board[X-1][Y+1] +
+               board[X-1][Y  ]
+    }
+    
+    if(X == boardLen-1){
+        return board[X  ][Y+1] +
+               board[X-1][Y+1] +
+               board[X-1][Y  ] +
+               board[X-1][Y-1] +
+               board[X  ][Y-1]
+    }
+    
+    if(Y == boardLen-1){
+        return board[X+1][ Y]  +
+               board[X-1][Y  ] +
+               board[X-1][Y-1] +
+               board[X  ][Y-1] +
+               board[X+1][Y-1]
+    }*/
+}
+
+function deepCopy(array){
+
+    var copy = new Array(boardLen);
+    for (var i = 0; i < boardLen; i++) {
+        copy[i] = array[i].slice();
+    }
+
+    return copy;
+
+}
+
+function stepBoard(){   // write next state for board to nBoard
+    
+    var sum1 = 0;
+    var sum2 = 0;
+    
+    convertBoard()   // setup pre-board
+	
+	var nBoard2 = deepCopy(nBoardPre)
+	var aneibs  = deepCopy(nBoard) 
+	
+	//printboard(nBoardPre, "nboardpre")
+	
+	//console.log("total neib:");
+	
+                //for(var i2 = 0; i2 < boardLen; i2++){
+                    //for(var j = 0; j < 10; j++){
+                //        console.log(board1[i2])
+
+
+                    //}
+                //}
+
+    for(var i = 0; i< boardLen; i++){
+        for(var j = 0; j < boardLen; j++){
+	
+
+            var active = false;
+	   
+            var self = nBoardPre[i][j]
+            
+            var retList     = countNeibs(i,j,nBoardPre)
+            var activeNeibs = countActiveNeibs(i,j,nBoardPre)
+			
+			aneibs[i][j] = activeNeibs
+			
+            var neibs1 = retList[0]
+            var neibs2 = retList[1]
+            
+            var neibs = neibs1 + neibs2
+            
+            if(self == 3 || self == 4){
+
+                if(activeNeibs == 0){
+
+                    nBoard2[i][j] = nBoardPre[i][j]
+					continue
+                    
+				}
+
+			}
+			
+
+			
+			//console.log("self:" + self.toString() + " i:" + i.toString() + " j: " + j.toString() + " neibs: " + activeNeibs.toString())	
+			
+            //if(activeNeibs > 0 && (self == 3 || self == 4)){
+
+            //    active = true;			
+			//}
+			//else if( !(self == 3 || self == 4){
+			//    active = true;			
+			//}
+
+			
+            if(neibs == 3 && activeNeibs > 0){
+                if(neibs1 > neibs2){
+                    nBoard2[i][j] = 1
+                    continue
+					//sum1 += 1;
+                }
+                else{
+                    nBoard2[i][j] = 2
+                    continue
+					//sum2 += 1;
+                }	
+		    }
+            else if(neibs == 2 && (self > 0)){
+
+			    if(neibs1 == neibs2){
+
+                    if((self % 2) == 0){
+                        nBoard2[i][j] = 2
+                        continue
+                    }
+                    else{
+                        nBoard2[i][j] = 1
+                        continue
+                    }
+                    //sum1 += self1;
+                    //sum2 += self2;
+				}
+                else if(neibs1 == 2){
+
+                    nBoard2[i][j] = 1
+                    continue
+                    //sum1 += 1;
+				}
+                else if(neibs2 == 2){
+
+                    nBoard2[i][j] = 2
+                    continue
+					//sum2 += 1;
+				}
+
+                    //if(i == 1 && j == 0){
+                    //    console.log("233");
+                    //    for(var i2 = 0; i2 < boardLen; i2++){
+                    //        console.log(board1[i2]);
+                    //    }
+                    //}
+
+			}
+			else{
+                nBoard2[i][j] = 0
+
+                    //if(i == 1 && j == 0){
+                    //    console.log("233");
+                    //    for(var i2 = 0; i2 < boardLen; i2++){
+                    //        console.log(board1next[i2]);
+                    //    }
+                    //}
+
+			}
+
+       }
+	}
+	
+	//printboard(aneibs, "neibs")
+	nBoard = nBoard2
+	
+    return //[sum1, sum2]
+
+}
+
+function runAuto() {
+  var time = 0;
+  var id = setInterval(step, 50);
+  function step() {
+    if (time == 100) {
+      clearInterval(id);
+	  drawBoard();
+    } 
+	else {
+        sums = stepBoard();    
+        if(sums[0] == 0 || sums[1] == 0){
+            clearInterval(id);
+        }
+        drawBoard();
+	}
+  }
+}
+
+
+
+document.getElementById("container").addEventListener('click', function(event) {
+	
+    console.log("Click   ready1: " + ready1.toString() + " ready2: " + ready2.toString())
+    
+    if(ready1){
+	    console.log("clicking 975")
+        board = deepCopy(nBoard)
+        //printboard(board, "board after copy")
+        drawBoard1()
+        drawBoard2()
+		turn++
+    }
+    else{
+        ready2 = true
+    }
+    
+    //var pixX = event.pageX - canvasLeft;
+    //var pixY = event.pageY - canvasTop;
+	
+    //var X2 = Math.floor(pixX / cellSize);
+    //var Y2 = Math.floor(pixY / cellSize);
+
+    //if(X2 >= 0 && X2 < boardLen && Y2 >= 0 && Y2 < boardLen){
+	
+
+    //for(var i2 = 0; i2 < boardLen; i2++){
+                    //for(var j = 0; j < 10; j++){
+    //                    console.log(board1[i2])
+
+
+                    //}
+    //            }
+    //    if(select(X2, Y2,(turn % 2))){
+    //                for(var i2 = 0; i2 < boardLen; i2++){
+                    //for(var j = 0; j < 10; j++){
+    //                    console.log(board1[i2])
+
+
+                    //}
+    //            }
+
+    //        turn++;
+    //        stepBoard();
+    //    }
+	//}
+	//else{
+    //    stepBoard();
+	
+	//}
+    
+	
+});
+
+document.getElementById("container").addEventListener('mousemove', function(event) {
+
+    ready1 = false
+	
+	var pixX = event.pageX - canvasLeft;
+	var pixY = event.pageY - canvasTop;
+	
+	var X2 = Math.floor(pixX / cellSize);
+	var Y2 = Math.floor(pixY / cellSize);
+	
+    if(X2 + Y2 * boardLen != selectedPos){
+	
+        var moved = false
+
+		var oldBoard = deepCopy(board)
+	
+        selectedPos = X2 + Y2 * boardLen
+    
+		if(X2 >= 0 && X2 < boardLen && Y2 >= 0 && Y2 < boardLen){
+	
+			//printboard(board, "board at mousemove start")
+        
+			console.log("ready1 : " + ready1.toString() + " ready2: : " + ready2.toString())
+		
+			if(preview(X2, Y2,(turn % 2), true)){
+
+				stepBoard(true, ctx2);
+			
+				if(ready2){
+					console.log("clicking 1063")
+					board = deepCopy(nBoard)
+					turn++
+					ready2 = false
+					moved = true
+				}
+			}
+			else{
+				stepBoard(true, ctx2)
+			}
+ 
+		}
+
+	
+		drawBoard1()
+		drawBoard2()
+	
+		if( ! moved){
+			board = oldBoard
+		}
+		
+	}
+
+    ready1 = true
+    
+    //drawBoard1();
+	//console.log(countNeibs(X2, Y2, board2));
+    
+	
+});
+
+drawBoard1();
+
+</script>
+
+</body>
+</html>
